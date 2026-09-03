@@ -163,12 +163,14 @@ html[data-layout-media-rows="modern"] .media-card.seerr-logo-card.focused .card-
    Discover page
    ======================================================================== */
 
+.discover-page .page-content,
+.discover-page .discover-content,
 .discover-content {
-    padding: 0 60px;
+    padding: 20px 0 !important;
 }
 
 .discover-controls {
-    padding: 24px 0 8px;
+    padding: 24px 60px 8px;
 }
 
 .discover-message {
