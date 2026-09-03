@@ -2437,7 +2437,8 @@ class SettingsPage extends Page {
                 { value: 'classic', label: i18n.t('LayoutClassic') || 'Classic' },
                 { value: 'modern', label: i18n.t('LayoutModernSidebar') || 'Modern' },
                 { value: 'modern-collapsed', label: i18n.t('LayoutModernCollapsedSidebar') || 'Modern Collapsed' },
-                { value: 'floating-buttons', label: i18n.t('LayoutFloatingButtonsSidebar') || 'Floating Buttons' }
+                { value: 'floating-buttons', label: i18n.t('LayoutFloatingButtonsSidebar') || 'Floating Buttons' },
+                { value: 'floating-island', label: i18n.t('LayoutFloatingIslandSidebar') || 'Floating Island' }
             ],
             layoutManager.getSidebarLayout() || 'modern'
         )}

@@ -257,7 +257,23 @@ class Sidebar extends Component {
                 // Handle D-pad navigation inside Modern Collapsed floating libraries popover
                 if (layoutManager.isModernCollapsedSidebarLayout() && this.floatingLibrariesOpen) {
                     const subLibs = this.el.querySelector('#sidebar-sub-libraries');
-                    if (subLibs && subLibs.contains(focusedEl)) {
+                    if (subLibs && (subLibs.contains(focusedEl) || subLibs.querySelector('.focused'))) {
+                        const items = Array.from(subLibs.querySelectorAll('.library-item:not(.hidden)'));
+                        const currentEl = subLibs.contains(focusedEl) ? focusedEl : subLibs.querySelector('.focused');
+                        const currentIndex = items.indexOf(currentEl);
+
+                        // Up on first item -> close popover and return focus to libraries button
+                        if (direction === 'up' && currentIndex === 0) {
+                            this._toggleFloatingLibraries(false);
+                            return true;
+                        }
+
+                        // Down on last item -> close popover and return focus to libraries button
+                        if (direction === 'down' && currentIndex === items.length - 1) {
+                            this._toggleFloatingLibraries(false);
+                            return true;
+                        }
+
                         // Pressing Left (or Right in RTL) returns to Libraries button and closes popover
                         if (direction === backDirection) {
                             this._toggleFloatingLibraries(false);
@@ -687,13 +703,47 @@ class Sidebar extends Component {
         };
         eventBus.on('key:back', this._onBackFloatingLibs);
 
-        // Document keydown for Escape / Remote Back
+        // Document keydown for Escape / Remote Back and boundary Up/Down dismiss
         this._onDocKeyDown = (e) => {
             if (layoutManager.isModernCollapsedSidebarLayout() && this.floatingLibrariesOpen) {
-                if (e.key === 'Escape' || e.keyCode === 10009 || e.keyCode === 27) {
+                const isEscape = e.key === 'Escape' || e.keyCode === 10009 || e.keyCode === 27;
+                if (isEscape) {
                     this._toggleFloatingLibraries(false);
                     e.preventDefault();
                     e.stopPropagation();
+                    return;
+                }
+
+                const subLibs = this.el.querySelector('#sidebar-sub-libraries');
+                if (subLibs && subLibs.contains(document.activeElement)) {
+                    const items = Array.from(subLibs.querySelectorAll('.library-item:not(.hidden)'));
+                    const currentIndex = items.indexOf(document.activeElement);
+
+                    // Up on first item -> close popover and return focus to libraries button
+                    if ((e.key === 'ArrowUp' || e.keyCode === 38) && currentIndex === 0) {
+                        this._toggleFloatingLibraries(false);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // Down on last item -> close popover and return focus to libraries button
+                    if ((e.key === 'ArrowDown' || e.keyCode === 40) && currentIndex === items.length - 1) {
+                        this._toggleFloatingLibraries(false);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+
+                    // Left arrow (or Right in RTL) -> close popover and return focus to libraries button
+                    const isRTL = document.documentElement.dir === 'rtl';
+                    const isBackDirection = isRTL ? (e.key === 'ArrowRight' || e.keyCode === 39) : (e.key === 'ArrowLeft' || e.keyCode === 37);
+                    if (isBackDirection) {
+                        this._toggleFloatingLibraries(false);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
                 }
             }
         };
@@ -957,10 +1007,10 @@ class Sidebar extends Component {
             // Set active focus inside floating window
             const activeLib = subLibs.querySelector('.library-item.active') || childBtns[0];
             if (activeLib) {
-                activeLib.focus();
+                focusManager.focusElement(activeLib);
             }
         } else {
-            const wasFocusInside = subLibs.contains(document.activeElement);
+            const wasFocusInside = subLibs.contains(document.activeElement) || Boolean(subLibs.querySelector('.focused'));
 
             subLibs.setAttribute('hidden', '');
             subLibs.style.display = 'none';
@@ -979,7 +1029,7 @@ class Sidebar extends Component {
 
             // Only restore focus to libBtn if focus was actually inside the popover
             if (wasFocusInside) {
-                libBtn.focus();
+                focusManager.focusElement(libBtn);
             }
         }
     }

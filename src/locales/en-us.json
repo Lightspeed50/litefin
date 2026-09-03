@@ -881,6 +881,7 @@
     "LayoutModernSidebar": "Modern",
     "LayoutModernCollapsedSidebar": "Modern Collapsed",
     "LayoutFloatingButtonsSidebar": "Floating Buttons",
+    "LayoutFloatingIslandSidebar": "Floating Island",
     "LayoutOrder": "Home Screen Layout",
     "Library": "Library",
     "LibraryPageSizeDescription": "Choose how many items to load at once in the grid view. Low values improve performance on weaker devices.",

@@ -363,12 +363,12 @@ class LayoutManager {
     }
 
     /**
-     * Checks if the sidebar is currently configured with the modern-collapsed or floating-buttons layout.
+     * Checks if the sidebar is currently configured with the modern-collapsed, floating-buttons, or floating-island layout.
      * In these modes, the sidebar never expands its rail and displays tooltips on focus.
-     * @returns {boolean} True if sidebar layout is 'modern-collapsed' or 'floating-buttons'.
+     * @returns {boolean} True if sidebar layout is collapsed/floating mode.
      */
     isModernCollapsedSidebarLayout() {
-        return this._sidebarLayout === 'modern-collapsed' || this._sidebarLayout === 'floating-buttons';
+        return this._sidebarLayout === 'modern-collapsed' || this._sidebarLayout === 'floating-buttons' || this._sidebarLayout === 'floating-island';
     }
 
     /**
@@ -378,6 +378,15 @@ class LayoutManager {
      */
     isFloatingButtonsSidebarLayout() {
         return this._sidebarLayout === 'floating-buttons';
+    }
+
+    /**
+     * Checks if the sidebar is currently configured with the floating-island layout.
+     * In this mode, middle buttons are grouped inside one continuous floating island capsule.
+     * @returns {boolean} True if sidebar layout is 'floating-island'.
+     */
+    isFloatingIslandSidebarLayout() {
+        return this._sidebarLayout === 'floating-island';
     }
 
     /**
