@@ -114,7 +114,7 @@ class LayoutManager {
         this._sidebarUnselectedColor = 'grey';
 
         // Sidebar selected icon color: 'grey', 'white', 'black', 'accent'
-        this._sidebarSelectedColor = 'accent';
+        this._sidebarSelectedColor = 'white';
 
         // OSD Custom Button & Focus Border styles (overrides global)
         this._osdButtonStyle = 'follow-global';
@@ -195,7 +195,7 @@ class LayoutManager {
         const savedFocusBorderStyle = storage.getItem('litefin:focusBorderStyle') || 'hidden';
         const savedHoverBorderStyle = storage.getItem('litefin:hoverBorderStyle') || 'white';
         const savedSidebarUnselectedColor = storage.getItem('litefin:sidebarUnselectedColor') || 'grey';
-        const savedSidebarSelectedColor = storage.getItem('litefin:sidebarSelectedColor') || 'accent';
+        const savedSidebarSelectedColor = storage.getItem('litefin:sidebarSelectedColor') || 'white';
         const savedOsdButtonStyle = storage.getItem('litefin:osdButtonStyle') || 'follow-global';
         const savedOsdFocusBorderStyle = storage.getItem('litefin:osdFocusBorderStyle') || 'follow-global';
         const savedOsdButtonShape = storage.getItem('litefin:osdButtonShape') || 'circle';

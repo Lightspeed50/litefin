@@ -2504,9 +2504,9 @@ class SettingsPage extends Page {
                         ${this._renderDropdown(
             'sidebar-selected-color-select',
             [
+                { value: 'white', label: i18n.t('SidebarColorWhite') || 'White' },
                 { value: 'accent', label: i18n.t('SidebarColorAccent') || 'Accent' },
                 { value: 'grey', label: i18n.t('SidebarColorGrey') || 'Grey' },
-                { value: 'white', label: i18n.t('SidebarColorWhite') || 'White' },
                 { value: 'black', label: i18n.t('SidebarColorBlack') || 'Black' }
             ],
             layoutManager.getSidebarSelectedColor()
