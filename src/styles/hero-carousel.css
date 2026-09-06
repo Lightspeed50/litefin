@@ -788,32 +788,55 @@
  * ============================================================================
  */
 
-/* Standard widescreen backdrop masking */
-.hero-carousel-container.immersive .hero-backdrop {
+/* 
+ * ============================================================================
+ * Backdrop Fade (Immersive & Semi-Immersive)
+ * ============================================================================
+ * Masking is strictly applied ONLY in Ambient Glow mode ([data-theme-mode="ambient"]).
+ * Why:
+ * 1. In Ambient Glow mode, true alpha transparency on .hero-backdrop is essential
+ *    so the dynamic colorful ambient mesh on the body can bleed through behind
+ *    the carousel and rows.
+ * 2. In non-ambient modes (Dark, OLED Black, etc.), the background is a solid color.
+ *    Using linear-gradient on ::after blends into var(--jf-background) completely
+ *    on the GPU, avoiding the expensive WebKit/Tizen CPU raster compositing pass.
+ * 3. In Ambient Glow mode with masking active, the faint ::after gradient is redundant
+ *    and causes unnecessary overdraw, so it is disabled.
+ * ============================================================================
+ */
+
+/* Standard widescreen backdrop masking - Ambient Glow theme only */
+[data-theme-mode="ambient"] .hero-carousel-container.immersive .hero-backdrop {
     -webkit-mask-image: linear-gradient(to bottom, black 35%, transparent 85%) !important;
     mask-image: linear-gradient(to bottom, black 35%, transparent 85%) !important;
 }
-.hero-carousel-container.semi-immersive .hero-backdrop {
+[data-theme-mode="ambient"] .hero-carousel-container.semi-immersive .hero-backdrop {
     -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 90%) !important;
     mask-image: linear-gradient(to bottom, black 40%, transparent 90%) !important;
 }
 
-/* Compact widescreen backdrop masking */
-.hero-carousel-container.immersive.compact .hero-backdrop {
+/* Compact widescreen backdrop masking - Ambient Glow theme only */
+[data-theme-mode="ambient"] .hero-carousel-container.immersive.compact .hero-backdrop {
     -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 80%) !important;
     mask-image: linear-gradient(to bottom, black 30%, transparent 80%) !important;
 }
-.hero-carousel-container.semi-immersive.compact .hero-backdrop {
+[data-theme-mode="ambient"] .hero-carousel-container.semi-immersive.compact .hero-backdrop {
     -webkit-mask-image: linear-gradient(to bottom, black 35%, transparent 80%) !important;
     mask-image: linear-gradient(to bottom, black 35%, transparent 80%) !important;
 }
 
-.hero-carousel-container.immersive .hero-item::after,
-.hero-carousel-container.semi-immersive .hero-item::after,
-.hero-carousel-container.immersive.compact .hero-item::after,
-.hero-carousel-container.semi-immersive.compact .hero-item::after {
-    background: linear-gradient(to top,transparent 25%,rgba(0,0,0,0.2) 65%,transparent 125%);
+/* 
+ * Eliminate redundant second gradient layer in Ambient Glow mode:
+ * When alpha masking is already carving out the backdrop transparency,
+ * this overlay gradient is pure overdraw overhead.
+ */
+[data-theme-mode="ambient"] .hero-carousel-container.immersive .hero-item::after,
+[data-theme-mode="ambient"] .hero-carousel-container.semi-immersive .hero-item::after,
+[data-theme-mode="ambient"] .hero-carousel-container.immersive.compact .hero-item::after,
+[data-theme-mode="ambient"] .hero-carousel-container.semi-immersive.compact .hero-item::after {
+    display: none !important;
 }
+
 
 /* 
  * ============================================================================
