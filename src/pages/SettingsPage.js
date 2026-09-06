@@ -2372,6 +2372,31 @@ class SettingsPage extends Page {
                     </div>
                 </div>
 
+                <div class="setting-item" id="hero-carousel-vignette-item" style="display: ${storage.getItem('pref:heroCarousel') !== 'false' ? '' : 'none'}">
+                    <div class="setting-label">
+                        <span class="setting-name" data-i18n="HeroCarouselVignette">${i18n.t('HeroCarouselVignette') || 'Text Vignette Contrast'}</span>
+                        <span class="setting-description" data-i18n="HeroCarouselVignetteDescription">${i18n.t('HeroCarouselVignetteDescription') || 'Adjust the dark vignette gradient behind carousel titles from completely transparent to 90% dark.'}</span>
+                    </div>
+                    <div class="setting-control">
+                        ${this._renderDropdown(
+                'hero-carousel-vignette-select',
+                [
+                    { value: 'transparent', label: i18n.t('Transparent') || 'Transparent (0%)' },
+                    { value: '10', label: '10%' },
+                    { value: '20', label: '20%' },
+                    { value: '30', label: '30%' },
+                    { value: '40', label: '40%' },
+                    { value: '50', label: '50%' },
+                    { value: '60', label: '60%' },
+                    { value: '70', label: `70% (${i18n.t('Default') || 'Default'})` },
+                    { value: '80', label: '80%' },
+                    { value: '90', label: '90%' }
+                ],
+                layoutManager.getHeroVignette()
+            )}
+                    </div>
+                </div>
+
                 <div class="setting-item" id="hero-carousel-zoom-item" style="display: ${storage.getItem('pref:heroCarousel') !== 'false' ? '' : 'none'}">
                     <div class="setting-label">
                         <span class="setting-name" data-i18n="HeroCarouselZoom">${i18n.t('HeroCarouselZoom') || 'Enable Zoom Effect'}</span>
@@ -8303,6 +8328,7 @@ class SettingsPage extends Page {
             'hero-image-quality-select': { key: 'pref:heroImageQuality', type: 'local' },
             'hero-carousel-interval-select': { key: 'pref:heroCarouselInterval', type: 'local' },
             'hero-carousel-count-select': { key: 'pref:heroCarouselCount', type: 'local' },
+            'hero-carousel-vignette-select': { key: 'pref:heroCarouselVignette', type: 'local' },
             'sidebar-mode-select': { key: 'pref:sidebarMode', type: 'local' },
             'icon-style-select': { key: 'pref:iconStyle', type: 'local', triggerEvent: true },
             'icon-variant-select': { key: 'pref:iconVariant', type: 'local', triggerEvent: true },
@@ -8468,6 +8494,12 @@ class SettingsPage extends Page {
                             focusManager.invalidateCache('settings-content');
                         } else if (id === 'card-label-scale-select') {
                             layoutManager.setCardLabelScale(parseFloat(newValue));
+                        } else if (id === 'hero-carousel-vignette-select') {
+                            /* 
+                              Applies real-time update of the hero carousel text vignette contrast
+                              and persists the selected opacity to local storage.
+                            */
+                            layoutManager.setHeroVignette(newValue);
                         } else if (id === 'sidebar-mode-select') {
                             storage.setItem('pref:sidebarMode', newValue);
                             document.body.classList.toggle('sidebar-mode-hidden', newValue === 'hidden');

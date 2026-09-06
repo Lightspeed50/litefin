@@ -134,6 +134,13 @@ class LayoutManager {
          */
         this._osdSeekBarProgressColor = 'theme-accent';
 
+        /*
+         * Customized contrast level for the hero carousel text vignette gradient.
+         * Controls dark shadow intensity behind titles from 'transparent' (0%) to '90%' (deep dark).
+         * Defaults to '50' (50% opacity) to provide optimal default text readability while revealing artwork.
+         */
+        this._heroVignette = '50';
+
         // Internal style element for dynamic variables
         this._dynamicStyleEl = null;
     }
@@ -202,6 +209,7 @@ class LayoutManager {
         const savedOsdUnfocusedButtonStyle = storage.getItem('litefin:osdUnfocusedButtonStyle') || 'icon-only';
         const savedOsdSeekBarThumbColor = storage.getItem('litefin:osdSeekBarThumbColor') || 'white';
         const savedOsdSeekBarProgressColor = storage.getItem('litefin:osdSeekBarProgressColor') || 'theme-accent';
+        const savedHeroVignette = storage.getItem('pref:heroCarouselVignette') || '70';
 
         this.setMediaRowsLayout(savedMediaRowsLayout, false);
         this.setLoginPageLayout(savedLoginPageLayout, false);
@@ -234,6 +242,7 @@ class LayoutManager {
         this.setOsdUnfocusedButtonStyle(savedOsdUnfocusedButtonStyle, false);
         this.setOsdSeekBarThumbColor(savedOsdSeekBarThumbColor, false);
         this.setOsdSeekBarProgressColor(savedOsdSeekBarProgressColor, false);
+        this.setHeroVignette(savedHeroVignette, false);
 
         // Load saved card label style and stamp it on the root HTML element
         const savedCardLabelStyle = storage.getItem('pref:cardLabelStyle') || 'default';
@@ -1089,6 +1098,124 @@ class LayoutManager {
      */
     getOnlyBlurHashBackdrop() {
         return this._onlyBlurHashBackdrop;
+    }
+
+    /**
+     * Get the current hero carousel text vignette contrast level
+     *
+     * @returns {string} e.g. 'transparent', '10', '20', ... '90'
+     * @public
+     */
+    getHeroVignette() {
+        return this._heroVignette;
+    }
+
+    /**
+     * Set and apply the hero carousel text vignette contrast level
+     *
+     * @param {string} value - 'transparent' or opacity percentage string ('10' - '90')
+     * @param {boolean} [save=true] - Persist the preference locally
+     * @public
+     */
+    setHeroVignette(value, save = true) {
+        /*
+         * Fallback to default '70' if value is missing or invalid.
+         * Default level 70 provides clean text contrast without overly dimming backdrop artwork.
+         */
+        this._heroVignette = value || '70';
+        document.documentElement.setAttribute('data-hero-vignette', this._heroVignette);
+
+        /*
+         * Trigger calculation of actual CSS variables on root style sheet
+         * so both standard and immersive theme variants receive immediate visual updates.
+         */
+        this._applyHeroVignetteVariables();
+
+        /*
+         * Persist preference locally if save flag is enabled
+         */
+        if (save) {
+            storage.setItem('pref:heroCarouselVignette', this._heroVignette);
+        }
+
+        /*
+         * Log state change and emit global event to notify active listeners
+         */
+        log.info(`Hero Carousel Vignette set to: ${this._heroVignette}`);
+        eventBus.emit('heroVignette:changed', { value: this._heroVignette });
+    }
+
+    /**
+     * Calculates and updates the CSS custom properties for the hero vignette gradient
+     * on the root element style sheet.
+     * @private
+     */
+    _applyHeroVignetteVariables() {
+        /*
+         * Default alpha values for level 70 (balanced Apple HIG contrast)
+         * Produces a clean ~0.72 start alpha and 0.40 mid-curve.
+         */
+        let startAlpha = 0.72;
+        let midAlpha = 0.40;
+        let endAlpha = 0.0;
+
+        /*
+         * Handle transparent / 0% explicit override case
+         */
+        if (this._heroVignette === 'transparent' || this._heroVignette === '0') {
+            startAlpha = 0;
+            midAlpha = 0;
+            endAlpha = 0;
+        } else {
+            /*
+             * Parse user configured percentage string (e.g. '10' through '90')
+             */
+            const parsed = parseFloat(this._heroVignette);
+            if (!isNaN(parsed)) {
+                /*
+                 * Calibrated perceptual curve:
+                 * On TV screens with bright HDR backdrops, linear 0.90 often looks washed out (like ~70%).
+                 * When set to 90%, we scale up to 0.96 for a rich, deep cinematic dark shadow behind titles.
+                 * When set to 70% (default), we map to 0.72 for clean text contrast without overpowering artwork.
+                 */
+                if (parsed >= 90) {
+                    startAlpha = 0.96;
+                    midAlpha = 0.65;
+                } else if (parsed >= 80) {
+                    startAlpha = 0.84;
+                    midAlpha = 0.52;
+                } else if (parsed >= 70) {
+                    startAlpha = 0.72;
+                    midAlpha = 0.40;
+                } else {
+                    /*
+                     * Proportional linear scaling for lower ranges (10% - 60%)
+                     */
+                    startAlpha = Math.min(Math.max(parsed / 100, 0), 0.70);
+                    midAlpha = parseFloat((startAlpha * 0.50).toFixed(3));
+                }
+                endAlpha = 0.0;
+            }
+        }
+
+        /*
+         * Format RGBA color values for CSS gradient custom properties
+         */
+        const startRgba = `rgba(0, 0, 0, ${startAlpha})`;
+        const midRgba = `rgba(0, 0, 0, ${midAlpha})`;
+        const endRgba = `rgba(0, 0, 0, ${endAlpha})`;
+
+        /*
+         * Apply custom properties directly on document element for immediate cascade
+         */
+        document.documentElement.style.setProperty('--hero-vignette-start', startRgba);
+        document.documentElement.style.setProperty('--hero-vignette-mid', midRgba);
+        document.documentElement.style.setProperty('--hero-vignette-end', endRgba);
+
+        // Notify polyfill for ultra-legacy webviews
+        if (cssVarsPolyfill && typeof cssVarsPolyfill.update === 'function') {
+            cssVarsPolyfill.update();
+        }
     }
 
     // Component registration (Existing logic maintained)
