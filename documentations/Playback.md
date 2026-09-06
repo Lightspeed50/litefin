@@ -71,3 +71,69 @@ The **Device Profile** system (`src/api/DeviceProfile.js` and `src/api/profiles/
 - Dolby Vision (DoVi) profiles (7/8) with HDR10 fallback logic.
 - Audio codec constraints (e.g., forcing transcoding for unsupported DTS or EAC3 streams).
 - Real-time quality switching and bit-rate limitation management.
+
+## Remote timeline confirmation (this fork)
+
+Player settings → **Confirm seeking with OK** is enabled by default. The Italian
+label is **Conferma spostamento con OK**. The preference is stored through
+`PlayerSettings` as `player:confirmSeekWithOK`; disabling it restores the original
+800 ms automatic seek debounce, including combined skip button behavior.
+
+Physical remote keys go through the input event bus to `OSDController.handleInput`
+and `_navigate`; server remote navigation uses the same entry point via
+`PlayerPage`. Timeline Left/Right calls `_seekTimeline`, which updates the OSD-only
+`_seekTargetTicks`. Timestamp, slider and `TrickplayManager` previews use that target;
+the actual player is paused on the first preview step. Holding an arrow retains
+acceleration only for native keydowns with `repeat: true` in the same direction.
+Separate presses, direction changes and keyup reset acceleration immediately. A
+300 ms inactivity timer clears the speed badge without erasing hold history. A
+subsequent native repeat continues the same hold even if rendering delayed input;
+a fresh non-repeated keydown resets it. The timer never commits the seek or resumes
+playback. Inputs without repeat metadata conservatively stay at 1×.
+
+The confirmation ramp reaches 2× at 0.75 s, 3× at 1.5 s, 4× at 2.25 s, 5× at 3 s
+and 10× at 4.5 s of held input. Each interval contributes at most 200 ms, so a long
+UI stall cannot abruptly boost the multiplier. Automatic seeking retains its
+original 2/4/6/8/12-second thresholds.
+Neither the 800 ms commit timer nor the 30-second scrub safety timeout applies to a
+confirmation preview. Auto-hide is suspended until the preview ends.
+
+OK clears the pending state and calls `JellyfinPlayer.seek` once. That preserves
+subtitle cue clearing, backend dispatch and the seek event used by SyncPlay.
+The original playing/paused state is remembered: confirmation seeks while paused,
+then resumes only if the video was playing before the preview. Back also restores
+the original state. Destruction or a media change discards the saved state without
+restarting the outgoing video. Pause/resume use the normal JellyfinPlayer methods,
+so reporting (including the paused transcoding heartbeat) and SyncPlay receive the
+normal playback events; no backend calls or event suppression bypass these paths.
+Repeated OK events in the confirmation burst are swallowed (native `repeat`, with
+an 800 ms inactivity fallback for remotes without reliable keyup events).
+
+Back cancels to the current real position. Moving vertically away from the timeline,
+using another OSD action, closing the OSD, changing media or destroying the player
+also clears the preview. Pointer input replaces it with the existing direct slider
+behavior; quick-seek and chapter selection keep their existing execution paths.
+
+Run `npm test` for deterministic remote-state, preference and backend seek tests.
+These isolate browser dependencies and use simulated media elements; they do not
+replace testing on a TV. Check both settings with short and held arrow presses,
+OK and Back, paused and playing video, Magic Remote clicks/dragging, chapter skips,
+subtitle synchronization and a real SyncPlay group. Test direct play and transcoded
+HLS content, including thumbnail loading over the network.
+
+Build an LG package with `npm run package:webos-modern` (webOS 6+) or
+`npm run package:webos-normal` (webOS 4+). These produce
+`Litefin-1.5.1-webOS-Modern.ipk` and `Litefin-1.5.1-webOS-Normal.ipk` at the repository
+root. With the TV Developer Mode app enabled and its Key Server running, configure
+the TV using the installed CLI, retrieve its key, then install and launch:
+
+```bash
+npx ares-setup-device
+npx ares-novacom --device TV --getkey
+npx ares-install --device TV Litefin-1.5.1-webOS-Modern.ipk
+npx ares-launch --device TV org.litefin.app
+```
+
+Use your configured device name instead of `TV` and the Normal package if needed.
+For a TV already using Homebrew Channel, the IPK can also be sideloaded through its
+package manager as described in the README.

@@ -2955,6 +2955,17 @@ class SettingsPage extends Page {
 
                 <div class="setting-item">
                     <div class="setting-label">
+                        <span class="setting-name" data-i18n="ConfirmSeekWithOK">${i18n.t('ConfirmSeekWithOK')}</span>
+                        <span class="setting-description" data-i18n="ConfirmSeekWithOKDescription">${i18n.t('ConfirmSeekWithOKDescription')}</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="toggle-switch ${PlayerSettings.get('confirmSeekWithOK') ? 'active' : ''}"
+                                id="toggle-confirm-seek" tabindex="0"></button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">
                         <span class="setting-name" data-i18n="OsdFocusRestoreMode">${i18n.t('OsdFocusRestoreMode') || 'OSD Focus Restore'}</span>
                         <span class="setting-description" data-i18n="OsdFocusRestoreModeDescription">${i18n.t('OsdFocusRestoreModeDescription') || 'Where the remote cursor lands when the player controls reappear after being auto-hidden.'}</span>
                     </div>
@@ -8938,6 +8949,15 @@ class SettingsPage extends Page {
         }
 
         // Toggle Switch for Seek With Arrows
+        const confirmSeekToggle = this.$('#toggle-confirm-seek');
+        if (confirmSeekToggle) {
+            confirmSeekToggle.addEventListener('click', () => {
+                const enabled = !PlayerSettings.get('confirmSeekWithOK');
+                PlayerSettings.set('confirmSeekWithOK', enabled);
+                confirmSeekToggle.classList.toggle('active', enabled);
+            });
+        }
+
         const seekWithArrowsToggle = this.$('#toggle-seek-with-arrows');
         if (seekWithArrowsToggle) {
             seekWithArrowsToggle.addEventListener('click', () => {

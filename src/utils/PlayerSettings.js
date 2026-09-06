@@ -452,6 +452,9 @@ const DEFAULTS = {
     // Instant seek when OSD is hidden using directional arrows
     seekWithArrows: true,
 
+    // Remote timeline previews are applied only when OK is pressed.
+    confirmSeekWithOK: true,
+
     // Enable mouse/magic cursor support in the OSD (hover and click)
     // Disabled by default on Tizen due to cursor interaction bugs
     enableMagicCursor: !platformInfo.isTizen,
