@@ -123,14 +123,14 @@ HLS content, including thumbnail loading over the network.
 
 Build an LG package with `npm run package:webos-modern` (webOS 6+) or
 `npm run package:webos-normal` (webOS 4+). These produce
-`Litefin-1.5.1-webOS-Modern.ipk` and `Litefin-1.5.1-webOS-Normal.ipk` at the repository
-root. With the TV Developer Mode app enabled and its Key Server running, configure
+`Litefin-VERSION-webOS-Modern.ipk` and `Litefin-VERSION-webOS-Normal.ipk` at the repository
+root (`VERSION` is the version in `package.json`). With the TV Developer Mode app enabled and its Key Server running, configure
 the TV using the installed CLI, retrieve its key, then install and launch:
 
 ```bash
 npx ares-setup-device
 npx ares-novacom --device TV --getkey
-npx ares-install --device TV Litefin-1.5.1-webOS-Modern.ipk
+npx ares-install --device TV Litefin-VERSION-webOS-Modern.ipk
 npx ares-launch --device TV org.litefin.app
 ```
 

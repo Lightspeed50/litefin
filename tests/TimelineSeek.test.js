@@ -20,12 +20,18 @@ function setup(enabled = true, paused = false) {
     const settings = { confirmSeekWithOK: enabled, skipBackLength: 5000, skipForwardLength: 10000 };
     const context = vm.createContext({
         Component: class {},
-        document: { addEventListener() {}, removeEventListener() {} },
+        document: {
+            addEventListener() {},
+            removeEventListener() {},
+            getElementById() {
+                return null;
+            }
+        },
         logger: {
             create: () => ({
                 info() {},
-                error(e) {
-                    throw new Error(e);
+                error(e, detail) {
+                    throw new Error(e, { cause: detail });
                 },
                 warn() {}
             })
@@ -105,6 +111,7 @@ function setup(enabled = true, paused = false) {
         osd,
         seeks,
         timers,
+        timerApi: { setTimeout: context.setTimeout, clearTimeout: context.clearTimeout },
         settings,
         position: (ticks) => {
             position = ticks;
@@ -222,11 +229,12 @@ test('cleanup cancels timers and preview state', () => {
     assert.equal(osd._seekDebounceTimer, null);
 });
 
-function loadSeekMethod(file, signature) {
+function loadSeekMethod(file, signature, timerApi = {}) {
     const source = readFileSync(new URL(`../src/player/core/${file}.js`, import.meta.url), 'utf8');
     const start = source.indexOf(`    ${signature}`);
     const end = source.indexOf('\n    }', start) + 6;
     return vm.runInNewContext(`({${source.slice(start, end)}}).seek`, {
+        ...timerApi,
         SEEK_THRESHOLD_MS: 100,
         log: { debug() {} }
     });
@@ -235,7 +243,7 @@ function loadSeekMethod(file, signature) {
 for (const backend of ['WebOSPlayer', 'HtmlVideoPlayer']) {
     for (const paused of [true, false]) {
         test(`${backend}: confirmed seek uses Jellyfin subtitle/event path and preserves paused=${paused}`, () => {
-            const { osd, seeks, advance } = setup(true, paused);
+            const { osd, seeks, advance, timerApi } = setup(true, paused);
             let writes = 0;
             let time = 80;
             let resets = 0;
@@ -254,7 +262,8 @@ for (const backend of ['WebOSPlayer', 'HtmlVideoPlayer']) {
                 _videoElement: video,
                 _currentPlayOptions: { transcodingOffsetTicks: 20 * 10000000 },
                 onEvent() {},
-                seek: loadSeekMethod(backend, 'seek(positionTicks) {')
+                getCurrentTime: () => time,
+                seek: loadSeekMethod(backend, 'seek(positionTicks) {', timerApi)
             };
             const player = {
                 isPaused: () => video.paused,
@@ -286,6 +295,7 @@ for (const backend of ['WebOSPlayer', 'HtmlVideoPlayer']) {
             assert.deepEqual(events, []);
             osd.handleInput('enter');
             osd.handleInput('enter');
+            advance(2500); // Run the upstream direct-play seek verification guard.
             assert.equal(writes, 1);
             assert.equal(time, 130);
             assert.equal(video.paused, paused);
