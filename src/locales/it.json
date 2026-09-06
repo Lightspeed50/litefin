@@ -1100,6 +1100,8 @@
     "ConfirmExitPlayerDescription": "Mostra una finestra di conferma quando si preme indietro per evitare di interrompere accidentalmente la riproduzione.",
     "ConfirmExitPlayerTitle": "Interrompere la riproduzione?",
     "ConfirmExitPlayerMessage": "Sei sicuro di voler interrompere la riproduzione e uscire?",
+    "ConfirmSeekWithOK": "Conferma spostamento con OK",
+    "ConfirmSeekWithOKDescription": "Durante lo scorrimento della timeline, mostra l’anteprima e applica la nuova posizione solo premendo OK.",
     "SeekWithArrows": "Cerca con i tasti freccia",
     "SeekWithArrowsDescription": "Usa le frecce sinistra/destra per cercare nel video invece di navigare nell'interfaccia durante la riproduzione.",
     "SeeMore": "Mostra Altro",

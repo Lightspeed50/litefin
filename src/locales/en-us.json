@@ -1152,6 +1152,8 @@
     "ConfirmExitPlayerDescription": "Show a confirmation dialog when pressing back to prevent accidentally closing playback.",
     "ConfirmExitPlayerTitle": "Exit Playback?",
     "ConfirmExitPlayerMessage": "Are you sure you want to stop playback and exit?",
+    "ConfirmSeekWithOK": "Confirm seeking with OK",
+    "ConfirmSeekWithOKDescription": "While scrolling the timeline, show the preview and apply the new position only when OK is pressed.",
     "SeekWithArrows": "Seek with Arrows",
     "SeekWithArrowsDescription": "When the player controls are hidden, pressing Left or Right will instantly seek instead of just showing the controls.",
     "SeeMore": "See More",

@@ -2818,6 +2818,28 @@ class SettingsPage extends Page {
                 : ''
             }
 
+            <div class="setting-item">
+                    <div class="setting-label">
+                        <span class="setting-name" data-i18n="ConfirmExitPlayer">${i18n.t('ConfirmExitPlayer') || 'Confirm before exiting player'}</span>
+                        <span class="setting-description" data-i18n="ConfirmExitPlayerDescription">${i18n.t('ConfirmExitPlayerDescription') || 'Show a confirmation dialog when pressing back to prevent accidentally closing playback.'}</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="toggle-switch ${PlayerSettings.get('confirmExitPlayer') ? 'active' : ''}"
+                                id="toggle-confirm-exit-player" tabindex="0"></button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span class="setting-name" data-i18n="ConfirmSeekWithOK">${i18n.t('ConfirmSeekWithOK')}</span>
+                        <span class="setting-description" data-i18n="ConfirmSeekWithOKDescription">${i18n.t('ConfirmSeekWithOKDescription')}</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="toggle-switch ${PlayerSettings.get('confirmSeekWithOK') ? 'active' : ''}"
+                                id="toggle-confirm-seek" tabindex="0"></button>
+                    </div>
+                </div>
+
                 <div class="setting-item">
                     <div class="setting-label">
                         <span class="setting-name" data-i18n="LabelAudioLanguagePreference">${i18n.t('LabelAudioLanguagePreference')}</span>
@@ -2951,17 +2973,6 @@ class SettingsPage extends Page {
                                 data-setting="seekWithArrows"
                                 tabindex="0">
                         </button>
-                    </div>
-                </div>
-
-                <div class="setting-item">
-                    <div class="setting-label">
-                        <span class="setting-name" data-i18n="ConfirmExitPlayer">${i18n.t('ConfirmExitPlayer') || 'Confirm before exiting player'}</span>
-                        <span class="setting-description" data-i18n="ConfirmExitPlayerDescription">${i18n.t('ConfirmExitPlayerDescription') || 'Show a confirmation dialog when pressing back to prevent accidentally closing playback.'}</span>
-                    </div>
-                    <div class="setting-control">
-                        <button class="toggle-switch ${PlayerSettings.get('confirmExitPlayer') ? 'active' : ''}"
-                                id="toggle-confirm-exit-player" tabindex="0"></button>
                     </div>
                 </div>
 
@@ -8946,6 +8957,16 @@ class SettingsPage extends Page {
                 PlayerSettings.set('trailerAutoChain', newValue);
                 trailerAutoChainToggle.classList.toggle('active', newValue);
                 log.info(`Trailer Auto-Chain set to: ${newValue}`);
+            });
+        }
+
+        // Toggle Switch for Seek With Arrows
+        const confirmSeekToggle = this.$('#toggle-confirm-seek');
+        if (confirmSeekToggle) {
+            confirmSeekToggle.addEventListener('click', () => {
+                const enabled = !PlayerSettings.get('confirmSeekWithOK');
+                PlayerSettings.set('confirmSeekWithOK', enabled);
+                confirmSeekToggle.classList.toggle('active', enabled);
             });
         }
 

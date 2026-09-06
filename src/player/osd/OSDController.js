@@ -28,6 +28,8 @@ import ConfirmExitModal from './ConfirmExitModal.js';
 import '../../styles/description-modal.css';
 
 const log = logger.create('OSDController');
+const SEEK_HOLD_IDLE_MS = 300;
+const SEEK_HOLD_MAX_TICK_MS = 200;
 
 /**
  * OSDController
@@ -72,6 +74,13 @@ export default class OSDController extends Component {
         this._seekTargetTicks = null;
         this._seekStartTime = null;
         this._seekDebounceTimer = null;
+        this._seekRequiresConfirmation = false;
+        this._seekLastInputTime = null;
+        this._seekConfirmTime = null;
+        this._seekHoldTimer = null;
+        this._seekHeldDirection = null;
+        this._seekHoldElapsed = 0;
+        this._seekResumePlayback = false;
 
         // Focus & Track State
         // Row -1: Overlays (persistent widgets)
@@ -363,6 +372,8 @@ export default class OSDController extends Component {
     }
 
     onBeforeDestroy() {
+        this._clearSeekState(false);
+        document.removeEventListener('keyup', this._onSeekKeyUp, true);
         this._stopUpdates();
         if (this._updateTimer) clearInterval(this._updateTimer);
         if (this._autoHideTimer) clearTimeout(this._autoHideTimer);
@@ -1198,6 +1209,7 @@ export default class OSDController extends Component {
     }
 
     hide() {
+        this._clearSeekState();
         // Don't hide if a modal menu is open
         if (this.isModalOpen) return;
 
@@ -1306,7 +1318,7 @@ export default class OSDController extends Component {
     resetAutoHide() {
         if (this._autoHideTimer) clearTimeout(this._autoHideTimer);
         // Do not auto-hide if a modal menu is open
-        if (this.isModalOpen) return;
+        if (this.isModalOpen || this._seekRequiresConfirmation) return;
 
         this._autoHideTimer = setTimeout(() => this.hide(), this._config.autoHideDelay);
     }
@@ -1550,6 +1562,12 @@ export default class OSDController extends Component {
     // ===================================
 
     _bindKeyEvents() {
+        this._onSeekKeyUp = (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.keyCode === 37 || e.keyCode === 39) {
+                this._resetSeekHold();
+            }
+        };
+        document.addEventListener('keyup', this._onSeekKeyUp, true);
         // ENTER
         this.on('key:enter', (e) => {
             // Conditionally prevent default inside handleInput based on what is focused
@@ -1567,11 +1585,11 @@ export default class OSDController extends Component {
         });
         this.on('key:left', (e) => {
             e?.preventDefault();
-            this.handleInput('left');
+            this.handleInput('left', e);
         });
         this.on('key:right', (e) => {
             e?.preventDefault();
-            this.handleInput('right');
+            this.handleInput('right', e);
         });
 
         // MEDIA KEYS (Play, Pause, stop, etc) are handled by PlayerPage.js
@@ -1603,6 +1621,40 @@ export default class OSDController extends Component {
 
         if (this._playerPage && this._playerPage._isSwitching) {
             log.debug('OSDController: Ignoring input key event during active track switch:', key);
+            return true;
+        }
+
+        // Some remotes repeat OK without a reliable keyup. Consume the rest of
+        // the confirmation burst so it cannot toggle playback after committing.
+        if (key === 'enter' && this._seekConfirmTime !== null) {
+            const repeated = e?.repeat || Date.now() - this._seekConfirmTime < 800;
+            this._seekConfirmTime = repeated ? Date.now() : null;
+            if (repeated) {
+                e?.preventDefault();
+                return true;
+            }
+        } else if (key !== 'enter') {
+            this._seekConfirmTime = null;
+        }
+        if (this._seekRequiresConfirmation && key === 'back') {
+            e?.preventDefault();
+            return this._handleBack();
+        }
+        if (this._seekRequiresConfirmation && key === 'enter' && this._currentFocusRow === 2) {
+            e?.preventDefault();
+            e?.stopPropagation();
+            const target = this._seekTargetTicks;
+            const resumePlayback = this._seekResumePlayback;
+            this._clearSeekState(false);
+            try {
+                this._player.seek(target);
+            } catch (err) {
+                log.error('Confirmed seek failed:', err);
+            } finally {
+                this._restoreSeekPlayback(resumePlayback);
+            }
+            this._seekConfirmTime = Date.now();
+            this.resetAutoHide();
             return true;
         }
 
@@ -1748,8 +1800,8 @@ export default class OSDController extends Component {
         switch (key) {
             case 'up': return this._navigate('up');
             case 'down': return this._navigate('down');
-            case 'left': return this._navigate('left');
-            case 'right': return this._navigate('right');
+            case 'left': return this._navigate('left', e);
+            case 'right': return this._navigate('right', e);
             case 'back': return this._handleBack();
             case 'enter': {
                 /*
@@ -1884,7 +1936,11 @@ export default class OSDController extends Component {
         return false;
     }
 
-    _navigate(direction) {
+    _navigate(direction, e) {
+        if (this._seekRequiresConfirmation && (direction === 'up' || direction === 'down')) {
+            this._clearSeekState();
+            this._updateState();
+        }
         // When the user picks up the D-pad, clear any Magic Cursor hover state
         // so the two input methods don't visually conflict.
         this._clearMagicHover();
@@ -1905,7 +1961,7 @@ export default class OSDController extends Component {
                 // Focus the seekbar so subsequent presses continue seeking
                 this._currentFocusRow = 2;
                 this._updateFocus();
-                this._executeAction(direction === 'left' ? 'rewind' : 'fastForward');
+                this._seekTimeline(direction, e);
                 return true;
             }
             // Do NOT return here. Let the navigation logic below run.
@@ -2042,7 +2098,7 @@ export default class OSDController extends Component {
             } else if (this._currentFocusRow === 1) {
                 if (this._currentFocusIndex > 0) this._currentFocusIndex--;
             } else if (this._currentFocusRow === 2) {
-                this._executeAction('rewind');
+                this._seekTimeline('left', e);
             } else if (this._currentFocusRow === 0 && document.documentElement.dir === 'rtl') {
                 // In RTL, Left from Header (Back) goes to Overlays (which are visually on the left)
                 this._enterOverlaysFromHeader();
@@ -2062,7 +2118,7 @@ export default class OSDController extends Component {
                 const controls = this._getControls();
                 if (this._currentFocusIndex < controls.length - 1) this._currentFocusIndex++;
             } else if (this._currentFocusRow === 2) {
-                this._executeAction('fastForward');
+                this._seekTimeline('right', e);
             } else if (this._currentFocusRow === 0 && document.documentElement.dir !== 'rtl') {
                 // In LTR, Right from Header (Back) goes to Overlays (which are visually on the right)
                 this._enterOverlaysFromHeader();
@@ -2102,6 +2158,12 @@ export default class OSDController extends Component {
     }
 
     _handleBack() {
+        if (this._seekRequiresConfirmation) {
+            this._clearSeekState();
+            this._updateState();
+            this.resetAutoHide();
+            return true;
+        }
         if (this.activeMenu && this.activeMenu.isVisible) {
             // Priority: Try to let the active menu handle the 'back' key itself.
             // This allows sub-menus to return to their parent menus (e.g. Sub-menu -> Settings).
@@ -2249,6 +2311,10 @@ export default class OSDController extends Component {
     // ===================================
 
     _executeAction(action) {
+        if (this._seekRequiresConfirmation) {
+            this._clearSeekState();
+            this._updateState();
+        }
         // ====================================================================
         // ACTIVE TRACK SWITCH GUARD
         // ====================================================================
@@ -2524,8 +2590,39 @@ export default class OSDController extends Component {
         }
     }
 
-    _performDebouncedSeek(offsetTicks) {
+    _seekTimeline(direction, e) {
+        if (!PlayerSettings.get('confirmSeekWithOK')) {
+            this._executeAction(direction === 'left' ? 'rewind' : 'fastForward');
+            return;
+        }
+        const backwards = direction === 'left';
+        const step = PlayerSettings.get(backwards ? 'skipBackLength' : 'skipForwardLength');
+        // Only native repeated keydowns prove a hold. Separate taps and remote
+        // commands without repeat metadata must always use the base step.
+        const held = e?.repeat === true && this._seekHeldDirection === direction;
+        this._performDebouncedSeek(step * 10000 * (backwards ? -1 : 1), true, held);
+        this._seekHeldDirection = direction;
+    }
+
+    _performDebouncedSeek(offsetTicks, requireConfirmation = false, held = false) {
         try {
+            if (this._seekRequiresConfirmation !== requireConfirmation) this._clearSeekState();
+            this._seekRequiresConfirmation = requireConfirmation;
+            const now = Date.now();
+            if (requireConfirmation) {
+                // Native repeat proves this is still the same physical hold, even
+                // if rendering or image decoding delayed delivery past the idle
+                // timeout. Count bounded active intervals, not the whole stall.
+                if (!held || this._seekLastInputTime === null) {
+                    this._seekHoldElapsed = 0;
+                } else {
+                    this._seekHoldElapsed += Math.max(
+                        0,
+                        Math.min(now - this._seekLastInputTime, SEEK_HOLD_MAX_TICK_MS)
+                    );
+                }
+            }
+            this._seekLastInputTime = now;
             this.show();
             this.resetAutoHide();
 
@@ -2533,6 +2630,10 @@ export default class OSDController extends Component {
                 const startPos = (this._player.getCurrentPositionTicks && this._player.getCurrentPositionTicks()) || 0;
                 this._seekTargetTicks = startPos;
                 this._seekStartTime = Date.now();
+                if (requireConfirmation) {
+                    this._seekResumePlayback = !this._player.isPaused();
+                    if (this._seekResumePlayback) this._player.pause();
+                }
                 log.info(`Seek scrub session started from: ${this._formatTime(startPos)}`);
             }
 
@@ -2542,14 +2643,25 @@ export default class OSDController extends Component {
              * This provides fine-grained control for short skips and massive
              * throughput for traversing long movies.
              */
-            const seekDuration = (Date.now() - this._seekStartTime) / 1000;
+            const seekDuration = requireConfirmation
+                ? this._seekHoldElapsed / 1000
+                : (Date.now() - this._seekStartTime) / 1000;
             let speedMultiplier = 1;
 
-            if (seekDuration >= 12) speedMultiplier = 10;      // Warp Speed: 10x
-            else if (seekDuration >= 8) speedMultiplier = 5;   // Very Fast: 5x
-            else if (seekDuration >= 6) speedMultiplier = 4;   // Fast: 4x
-            else if (seekDuration >= 4) speedMultiplier = 3;   // Medium: 3x
-            else if (seekDuration >= 2) speedMultiplier = 2;   // Slow Ramp: 2x
+            if (requireConfirmation) {
+                if (seekDuration >= 4.5) speedMultiplier = 10;
+                else if (seekDuration >= 3) speedMultiplier = 5;
+                else if (seekDuration >= 2.25) speedMultiplier = 4;
+                else if (seekDuration >= 1.5) speedMultiplier = 3;
+                else if (seekDuration >= 0.75) speedMultiplier = 2;
+            } else {
+                // Preserve the original ramp for automatic and quick seeking.
+                if (seekDuration >= 12) speedMultiplier = 10;
+                else if (seekDuration >= 8) speedMultiplier = 5;
+                else if (seekDuration >= 6) speedMultiplier = 4;
+                else if (seekDuration >= 4) speedMultiplier = 3;
+                else if (seekDuration >= 2) speedMultiplier = 2;
+            }
 
             if (isNaN(offsetTicks)) return;
             const adjustedOffset = offsetTicks * speedMultiplier;
@@ -2591,6 +2703,16 @@ export default class OSDController extends Component {
 
                 /* Update trickplay thumbnail (only if enabled and data is available) */
                 this._updateTrickplayTooltip(this._seekTargetTicks);
+            }
+
+            if (requireConfirmation) {
+                if (this._seekHoldTimer) clearTimeout(this._seekHoldTimer);
+                // Clear the speed badge on inactivity, but retain hold evidence
+                // until keyup, a fresh keydown or a direction change. A delayed
+                // native repeat must not restart acceleration from zero.
+                this._seekHoldTimer = setTimeout(() => this._resetSeekHold(false), SEEK_HOLD_IDLE_MS);
+                this._seekDebounceTimer = null;
+                return;
             }
 
             this._seekDebounceTimer = setTimeout(() => {
@@ -2667,7 +2789,11 @@ export default class OSDController extends Component {
 
             // Seek Safety: skip updates while the user is actively scrubbing
             if (this._seekTargetTicks !== null) {
-                if (this._seekStartTime && (Date.now() - this._seekStartTime > 30000)) {
+                if (
+                    !this._seekRequiresConfirmation &&
+                    this._seekStartTime &&
+                    Date.now() - this._seekStartTime > 30000
+                ) {
                     log.warn('Seek session safety timeout (30s). Resetting.');
                     this._seekTargetTicks = null;
                     this._seekStartTime = null;
@@ -2794,6 +2920,7 @@ export default class OSDController extends Component {
             return;
         }
 
+        if (this._seekRequiresConfirmation) this._clearSeekState();
         this._isDraggingSeekbar = true;
         this.resetAutoHide();
 
@@ -2872,6 +2999,7 @@ export default class OSDController extends Component {
         }
 
         try {
+            if (this._seekRequiresConfirmation) this._clearSeekState();
             const duration = this._player.getDurationTicks();
             const percent = e.target.value / 100;
             const targetTicks = duration * percent;
@@ -2943,7 +3071,39 @@ export default class OSDController extends Component {
         }
     }
 
-    _clearSeekState() {
+    _resetSeekHold(released = true) {
+        if (this._seekHoldTimer) clearTimeout(this._seekHoldTimer);
+        this._seekHoldTimer = null;
+        if (released) {
+            this._seekHeldDirection = null;
+            this._seekLastInputTime = null;
+            this._seekHoldElapsed = 0;
+        }
+        if (!this._seekRequiresConfirmation) return;
+        if (this._cachedTooltipTextEl && this._seekTargetTicks !== null) {
+            this._cachedTooltipTextEl.textContent = this._formatTime(
+                this._seekTargetTicks,
+                this._player.getDurationTicks() >= 3600 * 10000000
+            );
+        }
+    }
+
+    _restoreSeekPlayback(resumePlayback) {
+        if (!resumePlayback) return;
+        try {
+            this._player.unpause();
+        } catch (err) {
+            log.error('Could not resume playback after timeline preview:', err);
+        }
+    }
+
+    _clearSeekState(restorePlayback = true) {
+        const resumePlayback = this._seekResumePlayback;
+        this._seekResumePlayback = false;
+        this._resetSeekHold();
+        this._seekRequiresConfirmation = false;
+        this._seekLastInputTime = null;
+        this._seekConfirmTime = null;
         if (this._seekDebounceTimer) {
             clearTimeout(this._seekDebounceTimer);
             this._seekDebounceTimer = null;
@@ -2952,16 +3112,17 @@ export default class OSDController extends Component {
         this._seekStartTime = null;
         this._isDraggingSeekbar = false;
 
-        const tooltip = this._osdEl.querySelector('#osdSeekTooltip');
+        const tooltip = this._osdEl?.querySelector('#osdSeekTooltip');
         if (tooltip) tooltip.classList.remove('visible');
+        this._hideTrickplayThumb();
+        if (restorePlayback) this._restoreSeekPlayback(resumePlayback);
     }
 
     _onPlayerSeek(e) {
-        // Only clear if we aren't currently in the middle of a scrub session.
-        // If we are scrubbing, we want to IGNORE intermediate platform seek events
-        // that might have been triggered by a previous partial commit, otherwise
-        // they will wipe our targetTicks and cause the slider to jump.
-        if (this._seekTargetTicks !== null) {
+        // Automatic scrubbing ignores intermediate seek events from a previous
+        // commit. A confirmation preview has not sought yet: an external seek
+        // (chapter, server remote or SyncPlay) supersedes that preview.
+        if (this._seekTargetTicks !== null && !this._seekRequiresConfirmation) {
             log.info('Ignoring player seek event during active scrub session');
             return;
         }
@@ -3656,6 +3817,7 @@ export default class OSDController extends Component {
     }
 
     updateItem(item) {
+        this._clearSeekState(false);
         this.setMetadata(item);
 
         /*
