@@ -1095,6 +1095,8 @@
     "SecondaryTitleSecondaryColorDescription": "Utilizza il colore del testo secondario per il numero dell'episodio e il titolo secondario del nome dello show nella pagina dei dettagli anziché il colore di accento principale.",
     "Seconds": "{0} secondi",
     "SecondsShort": "{0}s",
+    "ConfirmSeekWithOK": "Conferma spostamento con OK",
+    "ConfirmSeekWithOKDescription": "Durante lo scorrimento della timeline, mostra l’anteprima e applica la nuova posizione solo premendo OK.",
     "SeekWithArrows": "Cerca con i tasti freccia",
     "SeekWithArrowsDescription": "Usa le frecce sinistra/destra per cercare nel video invece di navigare nell'interfaccia durante la riproduzione.",
     "SeeMore": "Mostra Altro",

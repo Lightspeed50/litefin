@@ -5,6 +5,7 @@
     "main": "src/index.js",
     "type": "module",
     "scripts": {
+        "test": "node --test tests/*.test.js",
         "build": "webpack --config webpack.config.cjs",
         "build:modern": "webpack --config webpack.config.cjs --config-name modern",
         "build:normal": "webpack --config webpack.config.cjs --config-name normal",

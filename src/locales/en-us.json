@@ -1147,6 +1147,8 @@
     "SecondaryTitleSecondaryColorDescription": "Use the secondary text color for the episode number and show name secondary title on the details page instead of the primary accent color.",
     "Seconds": "{0} seconds",
     "SecondsShort": "{0}s",
+    "ConfirmSeekWithOK": "Confirm seeking with OK",
+    "ConfirmSeekWithOKDescription": "While scrolling the timeline, show the preview and apply the new position only when OK is pressed.",
     "SeekWithArrows": "Seek with Arrows",
     "SeekWithArrowsDescription": "When the player controls are hidden, pressing Left or Right will instantly seek instead of just showing the controls.",
     "SeeMore": "See More",
