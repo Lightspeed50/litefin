@@ -124,13 +124,14 @@ export class SeerrClient {
             }
 
             const now = Date.now();
-            const cached = this._cache.get(path);
+            const cacheKey = `${api._userId || 'anon'}:${path}`;
+            const cached = this._cache.get(cacheKey);
             if (cached && now - cached.timestamp < this._cacheTtlMs) {
                 return cached.data;
             }
 
             const data = await api.get(`${API_ROOT}${path}`);
-            this._cache.set(path, { data, timestamp: now });
+            this._cache.set(cacheKey, { data, timestamp: now });
             return data;
         } catch (err) {
             log.warn(`Request failed: ${method} ${path}`, err);

@@ -36,6 +36,7 @@ import { storage } from '../utils/StorageService.js';
 import { buildJellyfinProfile } from './DeviceProfile.js';
 import { focusManager } from '../ui/FocusManager.js';
 import { imageCache } from '../utils/ImageCache.js';
+import { seerr } from './seerrClient.js';
 import { logger } from '../utils/Logger.js';
 
 const log = logger.create('AuthManager');
@@ -740,6 +741,10 @@ class AuthManager {
         state.clearByPrefix('search:');
         state.clearByPrefix('person:');
         state.clearByPrefix('player:');
+        state.clearByPrefix('discover:');
+
+        // Wipe Seerr client response cache so user-scoped requests and watchlist are refetched
+        seerr.clearCache();
 
         // Clear focus memory so old user's spatial focus targets don't persist
         focusManager.clearMemory();
@@ -838,6 +843,10 @@ class AuthManager {
         state.clearByPrefix('search:');
         state.clearByPrefix('person:');
         state.clearByPrefix('player:');
+        state.clearByPrefix('discover:');
+
+        // Wipe Seerr client response cache so user-scoped requests and watchlist are refetched
+        seerr.clearCache();
 
         // Clear focus manager memory
         focusManager.clearMemory();

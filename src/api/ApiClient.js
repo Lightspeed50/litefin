@@ -158,6 +158,7 @@ export class ApiClient {
         // Wipe page caches — stale data bound to the previous auth session
         state.clearByPrefix('details:');
         state.clearByPrefix('home:');
+        state.clearByPrefix('discover:');
 
         log.info('Authentication cleared');
     }
