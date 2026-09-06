@@ -147,11 +147,19 @@ class SeerrDetailsPage extends Page {
             }
             if (mediaType === 'tv') {
                 try {
+                    // Query season-level statuses for this series
                     const seasons = await seerr.tvSeasons(tmdbId);
+
+                    // A season is requestable if it is NOT already available, pending, or processing.
+                    // This allows partially available, unknown, or unrequested seasons to be requested.
                     this._hasUnrequestedSeasons = seasons.some(
-                        (s) => s.status === SEERR_STATUS.NOT_REQUESTED || s.status === SEERR_STATUS.DELETED
+                        (s) =>
+                            s.status !== SEERR_STATUS.AVAILABLE &&
+                            s.status !== SEERR_STATUS.PENDING &&
+                            s.status !== SEERR_STATUS.PROCESSING
                     );
                 } catch (e) {
+                    // Fallback to allowing request if season check fails
                     this._hasUnrequestedSeasons = true;
                 }
             }
@@ -456,11 +464,18 @@ class SeerrDetailsPage extends Page {
     async _refreshTvSeasonState() {
         if (this._item._mediaType === 'tv') {
             try {
+                // Refresh season statuses from Seerr
                 const seasons = await seerr.tvSeasons(this._item._tmdbId);
+
+                // Check if any season is not already available or requested
                 this._hasUnrequestedSeasons = seasons.some(
-                    (s) => s.status === SEERR_STATUS.NOT_REQUESTED || s.status === SEERR_STATUS.DELETED
+                    (s) =>
+                        s.status !== SEERR_STATUS.AVAILABLE &&
+                        s.status !== SEERR_STATUS.PENDING &&
+                        s.status !== SEERR_STATUS.PROCESSING
                 );
             } catch (e) {
+                // Log warning if refresh fails
                 log.warn('Failed to refresh TV seasons status', e);
             }
         }
@@ -952,25 +967,34 @@ class SeerrDetailsPage extends Page {
         const button = this.$('.seerr-request-btn');
         const cancelBtn = this.$('.seerr-cancel-request-btn');
         if (!button) return;
+
         const isTv = this._item._mediaType === 'tv';
         let requestable;
+
         if (isTv) {
+            // For TV shows, allow requesting missing seasons as long as the series is not
+            // completely available, and there are seasons that haven't been requested or are partial.
             requestable = this._item._seerrStatus !== SEERR_STATUS.AVAILABLE && this._hasUnrequestedSeasons !== false;
         } else {
+            // For movies, only unrequested, unknown, or deleted items can be requested
             requestable =
                 this._item._seerrStatus === SEERR_STATUS.NOT_REQUESTED ||
                 this._item._seerrStatus === SEERR_STATUS.UNKNOWN ||
                 this._item._seerrStatus === SEERR_STATUS.DELETED;
         }
+
+        // Toggle request button visibility and focus accessibility
         button.classList.toggle('hidden', !requestable);
         button.tabIndex = requestable ? 0 : -1;
 
+        // Cancel button is available when a request ID exists and media isn't fully available
         const canCancel = !!(this._item._requestId && this._item._seerrStatus !== SEERR_STATUS.AVAILABLE);
         if (cancelBtn) {
             cancelBtn.classList.toggle('hidden', !canCancel);
             cancelBtn.tabIndex = canCancel ? 0 : -1;
         }
 
+        // When partially available or already pending/processing, show "Request More"
         const isPartialOrPending =
             isTv &&
             (this._item._seerrStatus === SEERR_STATUS.PENDING ||
@@ -980,6 +1004,8 @@ class SeerrDetailsPage extends Page {
         if (span) {
             span.textContent = i18n.t(isPartialOrPending ? 'SeerrRequestMore' : 'SeerrRequest');
         }
+
+        // Re-evaluate focus layout for action buttons
         focusManager.invalidateCache('seerr-details-actions');
     }
 

@@ -514,9 +514,15 @@ class SeerrRequestModal {
 
         if (seasons.length === 0) return selected;
 
-        // A season already available or already requested cannot be re-requested
-        const isLocked = (s) => s.status > SEERR_STATUS.NOT_REQUESTED && s.status !== SEERR_STATUS.DELETED;
+        // A season is locked only if it is already available, pending, or processing.
+        // Seasons with NOT_REQUESTED, UNKNOWN (unmonitored/missing), PARTIALLY_AVAILABLE,
+        // or DELETED status remain requestable by the user.
+        const isLocked = (s) =>
+            s.status === SEERR_STATUS.AVAILABLE ||
+            s.status === SEERR_STATUS.PENDING ||
+            s.status === SEERR_STATUS.PROCESSING;
 
+        // Hide the request button if all seasons are already locked (available or requested)
         if (seasons.every((s) => isLocked(s)) && requestBtn) {
             requestBtn.classList.add('hidden');
             requestBtn.tabIndex = -1;
