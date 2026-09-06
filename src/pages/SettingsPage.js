@@ -1976,18 +1976,21 @@ class SettingsPage extends Page {
                         ${this._renderDropdown(
             'home-rows-limit-select',
             [
-                { value: 30, label: i18n.t('ItemCountValue', [30]) || '30 items' },
-                { value: 25, label: i18n.t('ItemCountValue', [25]) || '25 items' },
-                { value: 20, label: i18n.t('ItemCountValue', [20]) || '20 items' },
-                { value: 15, label: i18n.t('ItemCountValue', [15]) || '15 items' },
+                { value: 8, label: i18n.t('ItemCountValue', [8]) || '8 items' },
+                { value: 10, label: i18n.t('ItemCountValue', [10]) || '10 items' },
                 {
                     value: 12,
                     label:
                         (i18n.t('ItemCountValue', [12]) || '12 items') +
                         ` (${i18n.t('Default') || 'Default'})`
                 },
-                { value: 10, label: i18n.t('ItemCountValue', [10]) || '10 items' },
-                { value: 8, label: i18n.t('ItemCountValue', [8]) || '8 items' }
+                { value: 15, label: i18n.t('ItemCountValue', [15]) || '15 items' },
+                { value: 20, label: i18n.t('ItemCountValue', [20]) || '20 items' },
+                { value: 25, label: i18n.t('ItemCountValue', [25]) || '25 items' },
+                { value: 30, label: i18n.t('ItemCountValue', [30]) || '30 items' },
+                { value: 50, label: i18n.t('ItemCountValue', [50]) || '50 items' },
+                { value: 100, label: i18n.t('ItemCountValue', [100]) || '100 items' },
+                { value: 200, label: i18n.t('ItemCountValue', [200]) || '200 items' }
             ],
             parseInt(storage.getItem('pref:homeRowsLimit') || 12, 10)
         )}
@@ -8500,8 +8503,9 @@ class SettingsPage extends Page {
                             storage.setItem(settingConfig.key, newValue);
 
                             // Invalidate the homepage page cache if settings that affect the home page contents change.
-                            // This ensures the next navigation to the home page has fresh content loaded.
+                            // This ensures the next navigation to the home page has fresh content loaded with the correct row limit.
                             const homepageLocalKeys = [
+                                'pref:homeRowsLimit',
                                 'pref:nextUpMaxDays',
                                 'pref:heroCarouselStyle',
                                 'pref:heroCarouselCount',

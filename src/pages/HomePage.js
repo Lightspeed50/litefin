@@ -581,6 +581,7 @@ class HomePage extends Page {
 
                             // Query played and in-progress episodes belonging to these series IDs,
                             // ordered by play date descending (using the official 'DatePlayed' parameter).
+                            // Limit dynamically accommodates high row limit settings (up to 200).
                             const activeEpisodesRes = await api.getItems({
                                 SeriesIds: uniqueSeriesIds.join(','),
                                 IncludeItemTypes: 'Episode',
@@ -588,7 +589,7 @@ class HomePage extends Page {
                                 SortOrder: 'Descending',
                                 Fields: 'LastPlayedDate',
                                 Recursive: true,
-                                Limit: 100
+                                Limit: Math.max(100, homeRowLimit)
                             });
 
                             // Process the returned episodes to construct the series activity map.
@@ -2611,6 +2612,13 @@ class HomePage extends Page {
             return null;
         }
 
+        // Invalidate if the user changed the row items limit while the cache was active
+        const currentHomeRowLimit = parseInt(storage.getItem('pref:homeRowsLimit') || 12, 10);
+        if (cache.homeRowLimit !== undefined && cache.homeRowLimit !== currentHomeRowLimit) {
+            state.delete('home:pageCache');
+            return null;
+        }
+
         if (Date.now() - cache.timestamp > PAGE_CACHE_TTL) {
             state.delete('home:pageCache');
             return null;
@@ -2715,11 +2723,15 @@ class HomePage extends Page {
         // HeroCarousel stores its items array on the instance as ._items.
         const heroItems = this._hero ? this._hero._items : [];
 
+        // Track active homeRowLimit in snapshot so any future change automatically triggers invalidation
+        const homeRowLimit = parseInt(storage.getItem('pref:homeRowsLimit') || 12, 10);
+
         state.set('home:pageCache', {
             libraries: this._libraries,
             thumbUrls,
             rows,
             heroItems,
+            homeRowLimit,
             serverUrl: api._serverUrl,
             userId: api._userId,
             timestamp: Date.now()
