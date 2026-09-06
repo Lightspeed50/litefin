@@ -23,6 +23,7 @@ import QueueModal from './QueueModal.js';
 import LyricsModal from './LyricsModal.js';
 import DescriptionModal from './DescriptionModal.js';
 import SyncPlayNotification from './SyncPlayNotification.js';
+import ConfirmExitModal from './ConfirmExitModal.js';
 
 import '../../styles/description-modal.css';
 
@@ -273,6 +274,9 @@ export default class OSDController extends Component {
         // SyncPlay notification overlay
         this.syncPlayNotification = new SyncPlayNotification(this);
 
+        // Confirm exit modal — prompts before exiting playback
+        this.confirmExitModal = new ConfirmExitModal(this);
+
         this.menus = [
             this.audioMenu,
             this.subtitleMenu,
@@ -290,7 +294,8 @@ export default class OSDController extends Component {
             this.queueModal,
             this.lyricsModal,
             this.descriptionModal,
-            this.syncPlayNotification
+            this.syncPlayNotification,
+            this.confirmExitModal
         ];
     }
 
@@ -2122,6 +2127,11 @@ export default class OSDController extends Component {
         if (this._isOsdVisible) {
             this.hide();
         } else {
+            // If confirmExitPlayer setting is enabled, show the confirmation dialog
+            if (PlayerSettings.get('confirmExitPlayer')) {
+                this.toggleConfirmExitModal(true);
+                return true;
+            }
             this._executeAction('exit');
         }
         return true;
@@ -2323,15 +2333,12 @@ export default class OSDController extends Component {
         switch (action) {
             case 'back': this._handleBack(); break;
             case 'exit':
-                /*
-                 * Lock out show() immediately so cursor movement during the async
-                 * _stopAndExit() shutdown cannot flicker the OSD back into view.
-                 * Then hide the OSD visually before the event fires.
-                 */
-                this._isExiting = true;
-                clearTimeout(this._autoHideTimer);
-                this.hide();
-                this.emit('exit');
+                // If confirmExitPlayer setting is enabled, intercept and show the confirmation modal
+                if (PlayerSettings.get('confirmExitPlayer')) {
+                    this.toggleConfirmExitModal(true);
+                    break;
+                }
+                this.exitPlayerConfirmed();
                 break;
             case 'togglePlay':
                 if (this._player.togglePlay) this._player.togglePlay();
@@ -3156,6 +3163,35 @@ export default class OSDController extends Component {
      *
      * @param {boolean} show - True to open, false to close.
      */
+    /**
+     * Open or close the Confirm Exit modal.
+     * @param {boolean} show - True to open, false to close.
+     */
+    toggleConfirmExitModal(show) {
+        if (show) {
+            this.activeMenu = this.confirmExitModal;
+            this.confirmExitModal.open();
+        } else {
+            if (this.activeMenu === this.confirmExitModal) {
+                this.activeMenu = null;
+            }
+            this.confirmExitModal.hide();
+            this._cacheFocusableElements();
+            this.show();
+        }
+    }
+
+    /**
+     * Confirmed playback exit.
+     * Locks out the OSD and emits the final exit event to PlayerPage.
+     */
+    exitPlayerConfirmed() {
+        this._isExiting = true;
+        clearTimeout(this._autoHideTimer);
+        this.hide();
+        this.emit('exit');
+    }
+
     toggleDescriptionModal(show) {
         if (show) {
             this.activeMenu = this.descriptionModal;

@@ -2956,6 +2956,17 @@ class SettingsPage extends Page {
 
                 <div class="setting-item">
                     <div class="setting-label">
+                        <span class="setting-name" data-i18n="ConfirmExitPlayer">${i18n.t('ConfirmExitPlayer') || 'Confirm before exiting player'}</span>
+                        <span class="setting-description" data-i18n="ConfirmExitPlayerDescription">${i18n.t('ConfirmExitPlayerDescription') || 'Show a confirmation dialog when pressing back to prevent accidentally closing playback.'}</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="toggle-switch ${PlayerSettings.get('confirmExitPlayer') ? 'active' : ''}"
+                                id="toggle-confirm-exit-player" tabindex="0"></button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">
                         <span class="setting-name" data-i18n="OsdFocusRestoreMode">${i18n.t('OsdFocusRestoreMode') || 'OSD Focus Restore'}</span>
                         <span class="setting-description" data-i18n="OsdFocusRestoreModeDescription">${i18n.t('OsdFocusRestoreModeDescription') || 'Where the remote cursor lands when the player controls reappear after being auto-hidden.'}</span>
                     </div>
@@ -8938,7 +8949,17 @@ class SettingsPage extends Page {
             });
         }
 
-        // Toggle Switch for Seek With Arrows
+        // Toggle Switch for Confirm Exit Player
+        const confirmExitPlayerToggle = this.$('#toggle-confirm-exit-player');
+        if (confirmExitPlayerToggle) {
+            confirmExitPlayerToggle.addEventListener('click', () => {
+                const enabled = !PlayerSettings.get('confirmExitPlayer');
+                PlayerSettings.set('confirmExitPlayer', enabled);
+                confirmExitPlayerToggle.classList.toggle('active', enabled);
+                log.info(`Confirm Exit Player set to: ${enabled}`);
+            });
+        }
+
         const seekWithArrowsToggle = this.$('#toggle-seek-with-arrows');
         if (seekWithArrowsToggle) {
             seekWithArrowsToggle.addEventListener('click', () => {

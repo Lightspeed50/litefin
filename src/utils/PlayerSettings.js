@@ -452,6 +452,11 @@ const DEFAULTS = {
     // Instant seek when OSD is hidden using directional arrows
     seekWithArrows: true,
 
+    // Confirm before exiting the player to prevent accidental playback dismissal.
+    // When enabled, pressing Back while controls are hidden (or activating exit)
+    // presents a confirmation modal before stopping playback and leaving the player.
+    confirmExitPlayer: false,
+
     // Enable mouse/magic cursor support in the OSD (hover and click)
     // Disabled by default on Tizen due to cursor interaction bugs
     enableMagicCursor: !platformInfo.isTizen,
