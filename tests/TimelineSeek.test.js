@@ -306,7 +306,7 @@ for (const backend of ['WebOSPlayer', 'HtmlVideoPlayer']) {
     }
 }
 
-test('preference defaults on, persists as a boolean and can be reset', () => {
+test('preference defaults off, persists as a boolean and can be reset', () => {
     const source = readFileSync(new URL('../src/utils/PlayerSettings.js', import.meta.url), 'utf8')
         .replace(/^import .*;\r?\n/gm, '')
         .replace('export const PlayerSettings', 'const PlayerSettings')
@@ -322,12 +322,15 @@ test('preference defaults on, persists as a boolean and can be reset', () => {
             removeItem: (key) => saved.delete(key)
         }
     });
-    assert.equal(settings.get('confirmSeekWithOK'), true);
-    settings.set('confirmSeekWithOK', false);
-    assert.equal(saved.get('player:confirmSeekWithOK'), 'false');
+    // Default setting is off (false)
     assert.equal(settings.get('confirmSeekWithOK'), false);
-    settings.reset('confirmSeekWithOK');
+    // Test setting to enabled
+    settings.set('confirmSeekWithOK', true);
+    assert.equal(saved.get('player:confirmSeekWithOK'), 'true');
     assert.equal(settings.get('confirmSeekWithOK'), true);
+    // Reset back to default (false)
+    settings.reset('confirmSeekWithOK');
+    assert.equal(settings.get('confirmSeekWithOK'), false);
 });
 
 for (const hasRepeatMetadata of [true, false]) {

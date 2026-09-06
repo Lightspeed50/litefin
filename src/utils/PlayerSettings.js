@@ -453,7 +453,7 @@ const DEFAULTS = {
     seekWithArrows: true,
 
     // Remote timeline previews are applied only when OK is pressed.
-    confirmSeekWithOK: true,
+    confirmSeekWithOK: false,
 
     // Enable mouse/magic cursor support in the OSD (hover and click)
     // Disabled by default on Tizen due to cursor interaction bugs
