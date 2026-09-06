@@ -478,19 +478,25 @@ class App {
                 }
 
                 // When returning from the background with multiple saved profiles,
-                // always show "Who's Watching" instead of restoring the previous user.
-                // This gives webOS a Netflix-style profile selection on app resume.
+                // optionally show "Who's Watching" instead of restoring the previous user.
+                // This preference is independent of cold-start auto-login.
                 const currentPath = router.getCurrentPath?.() || '';
                 const sessionCount = state.get('user:sessionCount', 0);
+                const showProfilesOnResume = storage.getItem('pref:showProfilesOnResume') === 'true';
 
                 if (
+                    showProfilesOnResume &&
                     state.get('user:authenticated') &&
                     sessionCount > 1 &&
                     currentPath !== '/profiles'
                 ) {
                     log.info(`App resumed with ${sessionCount} profiles - showing profile selector`);
-                    pluginManager.destroy();
-                    router.reset('/profiles');
+                    if (currentPath.startsWith('/player')) {
+                        router.getCurrentPage()?.showResumeProfileSelector?.();
+                    } else {
+                        pluginManager.destroy();
+                        router.reset('/profiles');
+                    }
                 } else if (!currentPath.startsWith('/player')) {
                     // Preserve the original Litefin behaviour when profile selection
                     // is not required.
