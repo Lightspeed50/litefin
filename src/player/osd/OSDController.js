@@ -410,6 +410,7 @@ export default class OSDController extends Component {
     }
 
     onBeforeDestroy() {
+        this._playerPage?._updateSubtitlePosition(false);
         this._clearSeekState(false);
         document.removeEventListener('keyup', this._onSeekKeyUp, true);
         this._stopUpdates();
@@ -967,6 +968,10 @@ export default class OSDController extends Component {
         return this.activeMenu && this.activeMenu.isModal && this.activeMenu.isVisible;
     }
 
+    get isVisible() {
+        return this._isOsdVisible;
+    }
+
     show() {
         /*
          * Exit lock: if the player is in the process of shutting down (e.g. the back
@@ -1329,6 +1334,7 @@ export default class OSDController extends Component {
         if (this._osdMainEl) this._osdMainEl.classList.add('osd-hidden');
         if (this._osdEl) this._osdEl.classList.add('osd-is-hidden');
         this._isOsdVisible = false;
+        this._playerPage?._updateSubtitlePosition(false);
 
         // Clear Magic Cursor hover when hiding
         this._clearMagicHover();
@@ -3016,6 +3022,7 @@ export default class OSDController extends Component {
      */
     _updateState() {
         try {
+            this._playerPage?._updateSubtitlePosition(this._isOsdVisible);
             // Always update playback info if active (it has its own visibility check)
             if (this.activeMenu && this.activeMenu === this.playbackInfo) {
                 this.playbackInfo.update();
