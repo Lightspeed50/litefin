@@ -18,13 +18,15 @@ function overlay(bottom, hidden = false) {
     return element;
 }
 
-function page(overlays, tops = [850, 960]) {
+function page(overlays, tops = [850, 960], frames = []) {
     return {
         getBoundingClientRect: () => ({ height: 1000 }),
         querySelectorAll: (selector) =>
             selector === '.subtitle-overlay'
                 ? overlays
-                : tops.map((top) => ({ getBoundingClientRect: () => ({ top, width: 1000, height: 40 }) }))
+                : selector === '.subtitle-renderer-frame'
+                  ? frames
+                  : tops.map((top) => ({ getBoundingClientRect: () => ({ top, width: 1000, height: 40 }) }))
     };
 }
 
@@ -71,4 +73,58 @@ test('ignores hidden cues and safely handles missing controls or a destroyed pag
     updateSubtitlePosition(page([secondary], []), true);
     assert.equal(secondary.style.transform, '');
     updateSubtitlePosition(null, true);
+});
+
+test('fits ASS and PGS frames uniformly, preserves artwork, and restores full size', () => {
+    const frame = {
+        style: {},
+        getBoundingClientRect() {
+            const scale = parseFloat((this.style.transform || '').replace('scale(', '')) || 1;
+            return { top: 0, height: 1000 * scale };
+        }
+    };
+    const root = page([], [850, 960], [frame]);
+    updateSubtitlePosition(root, true);
+    assert.equal(frame.style.transform, 'scale(0.83)');
+    assert.equal(frame.style.webkitTransform, 'scale(0.83)');
+    updateSubtitlePosition(root, true);
+    assert.equal(frame.style.transform, 'scale(0.83)', 'scaling must not accumulate');
+    updateSubtitlePosition(root, false);
+    assert.equal(frame.style.transform, '');
+    assert.equal(frame.style.webkitTransform, '');
+});
+
+test('adapts graphic frames to changed viewport and controls and ignores absent controls', () => {
+    const viewport = { clientHeight: 1000 };
+    const frame = {
+        style: {},
+        _subtitleViewport: viewport,
+        getBoundingClientRect: () => ({ top: 100, height: viewport.clientHeight })
+    };
+    updateSubtitlePosition(page([], [850], [frame]), true);
+    assert.equal(frame.style.height, '1000px');
+    assert.equal(frame.style.transform, 'scale(0.73)');
+    viewport.clientHeight = 500;
+    updateSubtitlePosition(page([], [500], [frame]), true);
+    assert.equal(frame.style.height, '500px');
+    assert.equal(frame.style.transform, 'scale(0.76)');
+    updateSubtitlePosition(page([], [], [frame]), true);
+    assert.equal(frame.style.transform, '');
+});
+
+test('ASS.js receives untransformed viewport sizes only when layout changes', () => {
+    const sizes = [];
+    const frame = {
+        style: {},
+        _subtitleResize: (...size) => sizes.push(size),
+        getBoundingClientRect: () => ({ top: 0, width: 1600, height: 1000 })
+    };
+    const root = page([], [850], [frame]);
+    updateSubtitlePosition(root, true);
+    assert.deepEqual(sizes, [[1328, 830, 136]]);
+    assert.equal(frame.style.transform, '');
+    updateSubtitlePosition(root, true);
+    assert.equal(sizes.length, 1, 'unchanged controls must not trigger redraws');
+    updateSubtitlePosition(root, false);
+    assert.deepEqual(sizes[1], [1600, 1000, 0]);
 });

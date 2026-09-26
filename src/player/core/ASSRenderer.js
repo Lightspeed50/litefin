@@ -16,6 +16,7 @@
  * @module core/ASSRenderer
  */
 
+import { mountSubtitleFrame, unwrapSubtitleFrame } from '../../utils/SubtitlePosition.js';
 import 'libjass/libjass.css';
 import '../../utils/SvgPathPolyfills.js';
 import libjass from 'libjass';
@@ -781,6 +782,7 @@ export default class ASSRenderer {
 
         // Remove the wrapper div from the DOM
         if (this._wrapper && this._wrapper.parentNode) {
+            unwrapSubtitleFrame(this._wrapper);
             this._wrapper.parentNode.removeChild(this._wrapper);
         }
         this._wrapper = null;
@@ -824,6 +826,7 @@ export default class ASSRenderer {
 
         if (this._wrapper && this._wrapper.parentNode) {
             log.info('Removing old subtitle wrapper');
+            unwrapSubtitleFrame(this._wrapper);
             this._wrapper.parentNode.removeChild(this._wrapper);
             this._wrapper = null;
         }
@@ -854,7 +857,7 @@ export default class ASSRenderer {
         this._wrapper.style.direction = 'ltr';
 
         // Append to the player container (overlays the video)
-        this._container.appendChild(this._wrapper);
+        mountSubtitleFrame(this._container, this._wrapper);
 
         // Re-apply all current settings to the wrapper
         this._updateWrapperStyles();
