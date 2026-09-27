@@ -7,7 +7,6 @@
  * @module core/PGSRenderer
  */
 
-import { mountSubtitleFrame, unwrapSubtitleFrame } from '../../utils/SubtitlePosition.js';
 import { PgsRenderer } from 'libpgs';
 import { logger } from '../../utils/Logger.js';
 
@@ -81,7 +80,7 @@ class PGSRenderer {
         this._canvas.style.objectFit = 'contain';
 
         this._canvasWrapper.appendChild(this._canvas);
-        mountSubtitleFrame(this._container, this._canvasWrapper);
+        this._container.appendChild(this._canvasWrapper);
 
         const config = {
             video: this._video, // null for AVPlay; libpgs is OK without a video element
@@ -301,7 +300,6 @@ class PGSRenderer {
         }
 
         if (this._canvasWrapper && this._canvasWrapper.parentNode) {
-            unwrapSubtitleFrame(this._canvasWrapper);
             this._canvasWrapper.parentNode.removeChild(this._canvasWrapper);
         }
 

@@ -1,4 +1,3 @@
-import { mountSubtitleFrame, unwrapSubtitleFrame } from '../../utils/SubtitlePosition.js';
 import ASS from 'assjs';
 import { logger } from '../../utils/Logger.js';
 
@@ -197,23 +196,6 @@ export default class ASSJSRenderer {
 
             this._applyStyles();
 
-            // ASS.js measures dialogue with getBoundingClientRect. Scaling an
-            // ancestor would corrupt those measurements for subsequent cues.
-            // Resize its viewport instead, letting ASS.js lay out and redraw.
-            mountSubtitleFrame(this._container, this._assContainer, null, (width, height, left) => {
-                this._assContainer.style.width = width + 'px';
-                this._assContainer.style.height = height + 'px';
-                this._assContainer.style.left = left + 'px';
-                this._clockProxy.style.width = width + 'px';
-                this._clockProxy.style.height = height + 'px';
-                // ASS.js exposes no resize() method, and ResizeObserver may
-                // run after the OSD paints. Its public resampling setter forces
-                // synchronous layout; restore the selected mode immediately.
-                const resampling = this._ass.resampling;
-                this._ass.resampling = resampling === 'video_height' ? 'video_width' : 'video_height';
-                this._ass.resampling = resampling;
-            });
-
             video.dispatchEvent(new Event('play'));
 
             log.info('ASS.js renderer created successfully');
@@ -319,7 +301,6 @@ export default class ASSJSRenderer {
         this._styleElement = null;
 
         if (this._assContainer && this._assContainer.parentNode) {
-            unwrapSubtitleFrame(this._assContainer);
             this._assContainer.parentNode.removeChild(this._assContainer);
         }
         this._assContainer = null;

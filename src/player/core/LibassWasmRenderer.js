@@ -14,7 +14,6 @@
  * ============================================================================
  */
 
-import { mountSubtitleFrame, unwrapSubtitleFrame } from '../../utils/SubtitlePosition.js';
 import SubtitlesOctopus from '@jellyfin/libass-wasm';
 import FontLoader from '../../utils/FontLoader.js';
 import { logger } from '../../utils/Logger.js';
@@ -401,9 +400,6 @@ export default class LibassWasmRenderer {
                 const isUltraLegacy = document.documentElement.getAttribute('data-layout-tier') === 'ultra-legacy';
                 this._octopus.canvasParent.style.zIndex = isUltraLegacy ? '50' : '30';
                 this._octopus.canvasParent.style.pointerEvents = 'none';
-                // Keep canvasParent directly under video.parentNode: libass
-                // removes it there on both normal disposal and worker errors.
-                mountSubtitleFrame(this._octopus.canvasParent, this._octopus.canvas, this._videoElement.parentNode);
             }
 
             this._updateWrapperStyles();
@@ -561,7 +557,7 @@ export default class LibassWasmRenderer {
                 const isUltraLegacy = document.documentElement.getAttribute('data-layout-tier') === 'ultra-legacy';
                 this._wrapper.style.zIndex = isUltraLegacy ? '50' : '30';
 
-                mountSubtitleFrame(this._container, this._wrapper);
+                this._container.appendChild(this._wrapper);
             }
 
             // Restore display in case clearTrack() previously hid the wrapper
@@ -596,7 +592,6 @@ export default class LibassWasmRenderer {
     _removeDOM() {
         if (this._wrapper) {
             if (this._wrapper.parentNode) {
-                unwrapSubtitleFrame(this._wrapper);
                 this._wrapper.parentNode.removeChild(this._wrapper);
             }
             this._wrapper = null;
