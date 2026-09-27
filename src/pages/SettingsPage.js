@@ -30,7 +30,7 @@ import { homeLayoutManager } from '../utils/HomeLayoutManager.js';
 import { sidebarLayoutManager } from '../utils/SidebarLayoutManager.js';
 import { eventBus } from '../core/EventBus.js';
 import { versionChecker } from '../utils/VersionChecker.js';
-import { settingsIcons, setIconStyle, getSupportedStyles, getLibraryIcon } from '../utils/Icons.js';
+import { settingsIcons, setIconStyle, getSupportedStyles } from '../utils/Icons.js';
 import { toast } from '../ui/Toast.js';
 import { pinManager } from '../utils/PinManager.js';
 import { pinDialog } from '../ui/PinDialog.js';
@@ -1571,36 +1571,6 @@ class SettingsPage extends Page {
                     </div>
                 </div>
 
-                <div class="setting-item">
-                    <div class="setting-label">
-                        <span class="setting-name">${i18n.t('ShowWatchProviders')}</span>
-                        <span class="setting-description">${i18n.t('ShowWatchProvidersDescription')}</span>
-                    </div>
-                    <div class="setting-control">
-                        <button class="toggle-switch ${storage.getItem('pref:showWatchProviders') === 'true' ? 'active' : ''}"
-                            id="toggle-show-watch-providers" tabindex="0" role="switch"
-                            aria-label="${i18n.t('ShowWatchProviders')}"
-                            aria-checked="${storage.getItem('pref:showWatchProviders') === 'true'}"></button>
-                    </div>
-                </div>
-
-                <div class="setting-item">
-                    <div class="setting-label">
-                        <span class="setting-name">${i18n.t('WatchProvidersRegion')}</span>
-                        <span class="setting-description">${i18n.t('WatchProvidersRegionDescription')}</span>
-                    </div>
-                    <div class="setting-control">
-                        ${this._renderDropdown(
-                            'watch-provider-region-select',
-                            [watchProviderRegion(storage.getItem('pref:watchProviderRegion'))].map((value) => ({
-                                value,
-                                label: watchProviderRegionName(value, i18n.currentLang)
-                            })),
-                            watchProviderRegion(storage.getItem('pref:watchProviderRegion'))
-                        )}
-                    </div>
-                </div>
-
                 <!-- Details Page Layout (Movies & Series) -->
                 <div class="setting-item">
                     <div class="setting-label">
@@ -2382,6 +2352,38 @@ class SettingsPage extends Page {
                                 id="toggle-hide-similar-section" 
                                 tabindex="0">
                         </button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span class="setting-name">${i18n.t('ShowWatchProviders')}</span>
+                        <span class="setting-description">${i18n.t('ShowWatchProvidersDescription')}</span>
+                    </div>
+                    <div class="setting-control">
+                        <button class="toggle-switch ${storage.getItem('pref:showWatchProviders') === 'true' ? 'active' : ''}"
+                            id="toggle-show-watch-providers" tabindex="0" role="switch"
+                            aria-label="${i18n.t('ShowWatchProviders')}"
+                            aria-checked="${storage.getItem('pref:showWatchProviders') === 'true'}"></button>
+                    </div>
+                </div>
+
+                <h3 class="setting-section-title" data-i18n="Seerr">${i18n.t('Seerr') || 'Seerr'}</h3>
+
+                <div class="setting-item">
+                    <div class="setting-label">
+                        <span class="setting-name">${i18n.t('WatchProvidersRegion')}</span>
+                        <span class="setting-description">${i18n.t('WatchProvidersRegionDescription')}</span>
+                    </div>
+                    <div class="setting-control">
+                        ${this._renderDropdown(
+                'watch-provider-region-select',
+                [watchProviderRegion(storage.getItem('pref:watchProviderRegion'))].map((value) => ({
+                    value,
+                    label: watchProviderRegionName(value, i18n.currentLang)
+                })),
+                watchProviderRegion(storage.getItem('pref:watchProviderRegion'))
+            )}
                     </div>
                 </div>
             </div>
